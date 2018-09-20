@@ -32,8 +32,8 @@ int brackets(int offsetindex) {
 	printf("%*s\n", 8+offsetindex*4,"BRACKETS");
 	offsetindex++;
 	char a;
-	while (isspace(a=getchar()))
-		;
+	while (isspace(a=getchar())) //ignoring spaces
+		;		     //
 	if (a== EOF||a=='\n'){
 		printf("Input empty\n");
 		return 0;
@@ -51,7 +51,7 @@ int brackets(int offsetindex) {
 }
 		
 int bracket(int offsetindex, char a){
-	printf("%*s\n", 7+offsetindex*4,"BRACKET");
+	printf("%*s\n", 7+offsetindex*4,"BRACKET"); //7 - length of the word "bracket"
 	if(a!='('){
 		if (check(a)) {
 		error(1);
