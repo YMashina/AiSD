@@ -1,7 +1,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <limits.h>
-
+#define STACK_SIZE 100
 enum err {err1 = 1, err2, err3, err4};
 
 void error(enum err er, char* str){
@@ -14,56 +14,52 @@ void error(enum err er, char* str){
 	}
 }
 
-struct StackNode 
+struct Stack 
 { 
-    char data; 
-    struct StackNode* next; 
+    int top; 
+    unsigned capacity; 
+    int* array; 
 }; 
   
-struct StackNode* newNode(char data) 
+struct Stack* createStack(unsigned capacity) //create a stack of a certain capacity
 { 
-    struct StackNode* stackNode = 
-              (struct StackNode*) malloc(sizeof(struct StackNode)); 
-    stackNode->data = data; 
-    stackNode->next = NULL; 
-    return stackNode; 
+    struct Stack* stack = (struct Stack*) malloc(sizeof(struct Stack)); 
+    stack->capacity = capacity; 
+    stack->top = -1; 
+    stack->array = (int*) malloc(stack->capacity * sizeof(int)); 
+    return stack; 
 } 
   
-int isEmpty(struct StackNode *root) 
-{ 
-    return !root; 
-} 
+int isFull(struct Stack* stack) 
+{   return stack->top == stack->capacity - 1; } 
   
-void push(struct StackNode** root, char data) 
+int isEmpty(struct Stack* stack) 
+{   return stack->top == -1;  } 
+   
+void push(struct Stack* stack, int item) // increases top by 1
 { 
-    struct StackNode* stackNode = newNode(data); 
-    stackNode->next = *root; 
-    *root = stackNode; 
-    printf("%c pushed to stack\n", data); 
+    if (isFull(stack)) 
+        return; 
+    stack->array[++stack->top] = item; 
+    printf("%c pushed to stack\n", item); 
 } 
-  
-char pop(struct StackNode** root) 
+
+int pop(struct Stack* stack) 
 { 
-    if (isEmpty(*root)) {
+    if (isEmpty(stack)){ 
       printf("Cannot pop from an empty stack.\n");
-       return 0; 
-    }
-    struct StackNode* temp = *root; 
-    *root = (*root)->next; 
-    int popped = temp->data; 
-    free(temp); 
-    printf("popped: %c\n", popped);
-    return popped; 
+        return 0; 
+      }
+    return stack->array[stack->top--]; 
 } 
-  
-char peek(struct StackNode* root) 
+char peek(struct Stack* stack) 
 { 
-    if (isEmpty(root)) {
+    if (isEmpty(stack)) {
       printf("Cannot peek an empty stack.\n");
        return 0; 
     }
        
-    return root->data; 
+    return stack->array[stack->top]; 
 } 
 
 int nooddsymbols(char a){
@@ -73,15 +69,19 @@ int nooddsymbols(char a){
     return 1;
 }
 
-int check(struct StackNode* , char * , int*, int, int*);
+int check(struct Stack* , char * , int*, int, int*);
   
-int abcd(struct StackNode* root, char * str, int* i, int* er){
+int abcd(struct Stack* stack, char * str, int* i, int* er){
 	char a;
   	while ((a=getchar())==' ')
   		;
-  	if (a==EOF||a=='\n'){
+  	if (a==EOF||a=='\n'){ //sequence as A C A is allowed
+      if(*i==0){
       printf("Empty sequence\n");
-      return 0;
+      return 0;}
+      if(*i==1){
+      printf("Correct\n");
+      exit(0);}
     }
     printf("Processing: %c\n", a);
   	if (!nooddsymbols(a)){
@@ -98,22 +98,22 @@ int abcd(struct StackNode* root, char * str, int* i, int* er){
   		str[(*i)+2]=' ';
     	str[(*i)+3]='\0';
     	(*i)+=3;
-  		if (check(root, str, i, 0, er))
+  		if (check(stack, str, i, 0, er))
   		return 1;
     return 0;
   	}
   	str[*i]=a;
     str[(*i)+1]='\0';
     (*i)++;
-    push(&root, a);
-    printf("on top of stack:%c\n", peek(root));
-    if(!abcd(root, str, i, er))
+    push(stack, a);
+    printf("on top of stack:%c\n", peek(stack));
+    if(!abcd(stack, str, i, er))
       return 0;
 
     return *er;
 }
 
-int check(struct StackNode* root, char * str, int* i, int dflag, int* er){
+int check(struct Stack* stack, char * str, int* i, int dflag, int* er){ //checking if x1 matches x2
 	char a;
 	while ((a=getchar())==' ')
   		;
@@ -125,14 +125,14 @@ int check(struct StackNode* root, char * str, int* i, int dflag, int* er){
       *er = 0;
       return 0;
     }
-  	printf("on top of stack :%c\n", peek(root));
+  	printf("on top of stack :%c\n", peek(stack));
     printf("Processing: %c\n", a);
-  	if (a==peek(root)&& a !='D'){
+  	if (a==peek(stack)&& a !='D'){ // checking for the ultimate D separator
   		str[*i]=a;
   		str[(*i)+1]='\0';
     	(*i)++;
-    	if (!isEmpty(root))
-  			pop(&root);
+    	if (!isEmpty(stack))
+  			pop(stack);
   		
   		else {
   			error(3,str); 
@@ -158,8 +158,8 @@ int check(struct StackNode* root, char * str, int* i, int dflag, int* er){
   		str[(*i)+2]=' ';
   		str[(*i)+3]='\0';
     	(*i)+=3;
-  		if (isEmpty(root)&&dflag){
-  			abcd(root, str, i, er);
+  		if (isEmpty(stack)&&dflag){
+  			abcd(stack, str, i, er);
   		}
   		else {
   			error(2, str);
@@ -167,8 +167,8 @@ int check(struct StackNode* root, char * str, int* i, int dflag, int* er){
   			return 0;
   		}
   	}
-    if (!isEmpty(root)) 
-      if (check(root, str, i, dflag, er))
+    if (!isEmpty(stack)) 
+      if (check(stack, str, i, dflag, er))
         return 1;
 
       return 1;
@@ -176,11 +176,12 @@ int check(struct StackNode* root, char * str, int* i, int dflag, int* er){
 
 int main() 
 { 
-    struct StackNode* root = NULL; 
+
+    struct Stack* stack = createStack(STACK_SIZE); 
     char a;
 
     char str[100]; int e = 1;
-    int i = 0, noerror = abcd(root, str, &i, &e);
+    int i = 0, noerror = abcd(stack, str, &i, &e);
   	
   	if (noerror)
   		printf("\nCorrect\n");
